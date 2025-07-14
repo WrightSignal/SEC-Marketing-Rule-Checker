@@ -21,7 +21,12 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",  # Local development
+        "https://*.vercel.app",   # All Vercel apps
+        "https://sec-marketing-rule-checker.vercel.app",  # Your specific app
+        "*"  # Allow all origins (for testing - remove in production)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,6 +61,16 @@ async def upload_document(
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="File type not supported. Please upload PDF, Word, or text files.")
     
+    # Check file size (600MB limit)
+    MAX_FILE_SIZE = 600 * 1024 * 1024  # 600MB in bytes
+    content = await file.read()
+    
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413, 
+            detail=f"File size exceeds maximum limit of 600MB. File size: {len(content) / (1024*1024):.1f}MB"
+        )
+    
     # Generate unique filename
     file_extension = os.path.splitext(file.filename)[1]
     unique_filename = f"{uuid.uuid4()}{file_extension}"
@@ -63,7 +78,6 @@ async def upload_document(
     
     # Save file
     with open(file_path, "wb") as buffer:
-        content = await file.read()
         buffer.write(content)
     
     # Create database record
@@ -133,4 +147,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port) 

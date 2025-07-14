@@ -10,33 +10,35 @@ import subprocess
 def main():
     """Start the FastAPI backend server"""
     print("🚀 Starting SEC Marketing Rule Checker Backend...")
-    print("📍 Server will be available at: http://localhost:8000")
-    print("📖 API Documentation will be available at: http://localhost:8000/docs")
+    
+    # Get port from environment (Railway sets this)
+    port = int(os.environ.get("PORT", 8000))
+    print(f"📍 Server will be available at: http://0.0.0.0:{port}")
+    print(f"📖 API Documentation will be available at: http://0.0.0.0:{port}/docs")
     print("=" * 60)
     
-    # Change to backend directory
-    backend_dir = os.path.join(os.path.dirname(__file__), 'backend')
-    if not os.path.exists(backend_dir):
-        print("❌ Backend directory not found!")
-        return 1
-    
-    os.chdir(backend_dir)
+    # We're already in the backend directory, no need to change paths
     
     # Check if requirements are installed
     try:
         import fastapi
         import uvicorn
         import sqlalchemy
-        import docx
-        import PyPDF2
     except ImportError as e:
         print(f"❌ Missing dependencies: {e}")
         print("💡 Please install requirements: pip install -r requirements.txt")
         return 1
     
-    # Start the server
+    # Start the server with dynamic port and large file support
     try:
-        cmd = [sys.executable, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+        cmd = [
+            sys.executable, "-m", "uvicorn", "main:app", 
+            "--host", "0.0.0.0", 
+            "--port", str(port),
+            "--timeout-keep-alive", "300",
+            "--limit-max-requests", "1000",
+            "--limit-concurrency", "100"
+        ]
         subprocess.run(cmd)
     except KeyboardInterrupt:
         print("\n👋 Server stopped.")
