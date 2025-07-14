@@ -18,15 +18,22 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS middleware
+# CORS middleware with Railway support
+cors_origins = [
+    "http://localhost:3000",  # Local development
+    "https://*.vercel.app",   # All Vercel apps
+    "https://sec-marketing-rule-checker.vercel.app",  # Your specific app
+    "https://*.railway.app",  # Railway deployments
+]
+
+# Add custom origins from environment variable
+cors_env = os.getenv("CORS_ORIGINS")
+if cors_env:
+    cors_origins.extend(cors_env.split(","))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",  # Local development
-        "https://*.vercel.app",   # All Vercel apps
-        "https://sec-marketing-rule-checker.vercel.app",  # Your specific app
-        "*"  # Allow all origins (for testing - remove in production)
-    ],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -72,7 +79,7 @@ async def upload_document(
         )
     
     # Generate unique filename
-    file_extension = os.path.splitext(file.filename)[1]
+    file_extension = os.path.splitext(file.filename or "")[1]
     unique_filename = f"{uuid.uuid4()}{file_extension}"
     file_path = os.path.join(UPLOAD_DIR, unique_filename)
     
