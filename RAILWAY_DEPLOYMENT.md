@@ -1,47 +1,50 @@
-# Railway Deployment Guide - SEC Marketing Rule Checker
+# Railway + Vercel Deployment Guide - SEC Marketing Rule Checker
 
 ## Project Information
-- **Project ID**: `c84d545a-ee8a-4ccd-99c6-8641cd9168eb`
+- **Railway Project ID**: `c84d545a-ee8a-4ccd-99c6-8641cd9168eb`
 - **Project Name**: SEC-Marketing-Rule-Checker
 - **Environment**: production
+- **Backend**: Railway (FastAPI)
+- **Frontend**: Vercel (React)
 
 ## Architecture Overview
 
-This project consists of two services:
-1. **Backend Service**: FastAPI Python application (Port 8000)
-2. **Frontend Service**: React application (Port 3000)
+This project uses a hybrid deployment approach:
+1. **Backend Service**: FastAPI Python application on Railway (Port 8000)
+2. **Frontend Service**: React application on Vercel
 
 ## Prerequisites
 
-1. **Railway CLI** (already installed)
+1. **Railway CLI** (for backend deployment)
    ```bash
    npm install -g @railway/cli
    ```
 
-2. **Railway Account** (already linked)
+2. **Vercel CLI** (for frontend deployment)
+   ```bash
+   npm install -g vercel
+   ```
+
+3. **Railway Account** (already linked)
    ```bash
    railway login
    ```
 
-## Deployment Structure
+4. **Vercel Account**
+   ```bash
+   vercel login
+   ```
 
-### Backend Service (`/backend`)
+## Backend Deployment (Railway)
+
+### Configuration
 - **Runtime**: Python 3.11
 - **Framework**: FastAPI
 - **Database**: SQLite (file-based)
 - **Configuration**: `backend/nixpacks.toml`
 
-### Frontend Service (`/frontend`)
-- **Runtime**: Node.js 18
-- **Framework**: React
-- **Build Tool**: Create React App
-- **Serving**: `serve` package
-- **Configuration**: `frontend/nixpacks.toml`
-
-## Environment Variables
-
-### Backend Service
-Set these environment variables in Railway dashboard:
+### Environment Variables
+Set these in Railway dashboard:
 
 ```bash
 # Automatically set by Railway
@@ -50,63 +53,74 @@ PORT=8000
 # Database (SQLite file-based - no external config needed)
 # File will be created as: ./sec_compliance.db
 
-# CORS Origins (update with your Railway frontend URL)
-CORS_ORIGINS=["https://your-frontend-service.railway.app"]
+# CORS Origins (add your Vercel URL)
+CORS_ORIGINS=https://your-vercel-app.vercel.app,https://sec-marketing-rule-checker.vercel.app
 ```
 
-### Frontend Service
-Set these environment variables in Railway dashboard:
-
-```bash
-# Automatically set by Railway
-PORT=3000
-
-# API Base URL (update with your Railway backend URL)
-REACT_APP_API_URL=https://your-backend-service.railway.app
-```
-
-## Deployment Commands
-
-### Deploy Backend Service
+### Deploy Backend
 ```bash
 # From project root
-railway up --service backend
+railway up
 
-# Or deploy specific service
+# Or specifically target the backend service
 railway up --service SEC-Marketing-Rule-Checker
 ```
 
-### Deploy Frontend Service
+## Frontend Deployment (Vercel)
+
+### Configuration
+- **Runtime**: Node.js 18
+- **Framework**: React
+- **Build Tool**: Create React App
+- **Platform**: Vercel
+
+### Environment Variables
+Set these in Vercel dashboard:
+
 ```bash
-# From project root
-railway up --service frontend
+# API Base URL (your Railway backend URL)
+REACT_APP_API_URL=https://your-railway-backend.railway.app
 ```
 
-### Deploy Both Services
+### Deploy Frontend
 ```bash
-# Deploy all services
-railway up
+# From frontend directory
+cd frontend
+vercel
+
+# Or for production deployment
+vercel --prod
 ```
 
 ## Service URLs
 
 Once deployed, your services will be available at:
-- **Backend**: `https://your-backend-service.railway.app`
-- **Frontend**: `https://your-frontend-service.railway.app`
+- **Backend (Railway)**: `https://your-backend-service.railway.app`
+- **Frontend (Vercel)**: `https://your-vercel-app.vercel.app`
 
 ## Configuration Files
 
-### Root Level
-- `railway.json` - Main Railway configuration
-- `RAILWAY_DEPLOYMENT.md` - This deployment guide
-
-### Backend Service
+### Backend (Railway)
 - `backend/nixpacks.toml` - Backend build configuration
 - `backend/requirements.txt` - Python dependencies
+- `backend/main.py` - Updated with Vercel CORS support
 
-### Frontend Service
-- `frontend/nixpacks.toml` - Frontend build configuration
-- `frontend/package.json` - Node.js dependencies (includes `serve`)
+### Frontend (Vercel)
+- `frontend/package.json` - Node.js dependencies
+- `frontend/public/index.html` - React app entry point
+- Vercel automatically detects React projects
+
+### Root Level
+- `railway.json` - Railway configuration
+- `RAILWAY_DEPLOYMENT.md` - This deployment guide
+
+## CORS Configuration
+
+The backend is already configured to accept requests from:
+- `http://localhost:3000` (Local development)
+- `https://*.vercel.app` (All Vercel apps)
+- `https://sec-marketing-rule-checker.vercel.app` (Your specific app)
+- `https://*.railway.app` (Railway deployments)
 
 ## Database Setup
 
@@ -124,96 +138,150 @@ Documents are stored in the `uploads/` directory:
 
 ## Monitoring and Logs
 
-### View Logs
+### Backend (Railway)
 ```bash
-# Backend logs
-railway logs --service backend
-
-# Frontend logs
-railway logs --service frontend
-
-# All services
-railway logs
+railway logs         # View application logs
+railway status       # Check deployment status
+railway open         # Open Railway dashboard
 ```
 
-### Service Status
+### Frontend (Vercel)
+- Use Vercel dashboard: https://vercel.com/dashboard
+- View deployment logs and analytics
+- Monitor performance and errors
+
+## Deployment Commands
+
+### Backend Only (Railway)
 ```bash
-railway status
+railway up
 ```
+
+### Frontend Only (Vercel)
+```bash
+cd frontend
+vercel --prod
+```
+
+### Both Services
+```bash
+# Deploy backend
+railway up
+
+# Deploy frontend
+cd frontend
+vercel --prod
+```
+
+## Environment Setup
+
+### Development
+```bash
+# Backend (Terminal 1)
+cd backend
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+# Frontend (Terminal 2)
+cd frontend
+npm start
+```
+
+### Production
+- Backend: Automatically deployed on Railway
+- Frontend: Automatically deployed on Vercel
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Build Failures**
-   - Check `nixpacks.toml` configuration
-   - Ensure all dependencies are in requirements.txt/package.json
+1. **CORS Errors**
+   - Verify your Vercel URL is added to CORS_ORIGINS in Railway
+   - Check that the frontend API URL points to your Railway backend
+
+2. **Backend Build Failures**
+   - Check `backend/nixpacks.toml` configuration
+   - Ensure all dependencies are in requirements.txt
    - Check Railway logs for specific errors
 
-2. **Service Communication**
-   - Update CORS origins in backend
-   - Set correct API URL in frontend environment variables
-   - Check service URLs in Railway dashboard
+3. **Frontend Build Failures**
+   - Check Vercel build logs
+   - Verify environment variables are set correctly
+   - Ensure API URL is accessible from Vercel
 
-3. **Database Issues**
-   - SQLite file permissions
-   - Check if uploads directory exists
-   - Verify database initialization
+4. **API Communication Issues**
+   - Check that Railway backend is running
+   - Verify CORS configuration includes your Vercel domain
+   - Test backend endpoints directly
 
 ### Useful Commands
 
 ```bash
-# Check project status
-railway status
+# Railway (Backend)
+railway status       # Check project status
+railway logs         # View logs
+railway variables    # View environment variables
+railway shell        # Connect to service shell
 
-# Open Railway dashboard
-railway open
-
-# View environment variables
-railway variables
-
-# Connect to service shell
-railway shell
-
-# Download service logs
-railway logs --service backend > backend.log
+# Vercel (Frontend)
+vercel ls            # List deployments
+vercel logs          # View logs
+vercel env           # Manage environment variables
+vercel --prod        # Deploy to production
 ```
 
 ## Security Considerations
 
 1. **Environment Variables**
+   - Use Railway's environment variables for backend secrets
+   - Use Vercel's environment variables for frontend config
    - Never commit sensitive data to repository
-   - Use Railway's environment variables for secrets
-   - Update CORS origins for production
 
-2. **File Uploads**
-   - Consider file size limits
-   - Implement proper file validation
-   - Use secure file storage for production
+2. **CORS Configuration**
+   - Limit CORS origins to your actual domains
+   - Remove wildcard origins in production
+   - Regularly review and update allowed origins
 
-3. **Database**
-   - SQLite is suitable for development/small scale
-   - Consider PostgreSQL for production scaling
+3. **API Security**
+   - Implement proper authentication if needed
+   - Use HTTPS for all communications
+   - Monitor API usage and rate limiting
 
 ## Production Checklist
 
-- [ ] Update CORS origins with actual frontend URL
-- [ ] Set correct API URL in frontend environment variables
-- [ ] Configure proper file storage solution
-- [ ] Set up monitoring and alerts
-- [ ] Configure custom domains if needed
-- [ ] Review security settings
-- [ ] Test all upload functionality
-- [ ] Set up backup strategy for database and files
+### Backend (Railway)
+- [ ] Railway deployment successful
+- [ ] Environment variables configured
+- [ ] Database initialized properly
+- [ ] Upload directory created
+- [ ] CORS origins include Vercel domain
+
+### Frontend (Vercel)
+- [ ] Vercel deployment successful
+- [ ] API URL environment variable set
+- [ ] Custom domain configured (if needed)
+- [ ] Performance monitoring enabled
+- [ ] Error tracking configured
+
+### Integration Testing
+- [ ] Frontend can reach backend API
+- [ ] File upload functionality works
+- [ ] CORS headers properly configured
+- [ ] SSL certificates valid
+- [ ] All API endpoints responsive
 
 ## Support
 
-For Railway-specific issues:
+### Railway (Backend)
 - Railway Documentation: https://docs.railway.app
 - Railway Discord: https://discord.gg/railway
 - Railway GitHub: https://github.com/railwayapp/railway
 
-For project-specific issues:
-- Check application logs in Railway dashboard
+### Vercel (Frontend)
+- Vercel Documentation: https://vercel.com/docs
+- Vercel Discord: https://discord.gg/vercel
+- Vercel GitHub: https://github.com/vercel/vercel
+
+### Project-Specific
+- Check application logs in respective dashboards
 - Review this deployment guide
 - Verify all configuration files are properly set 
